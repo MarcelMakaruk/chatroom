@@ -11,6 +11,7 @@
 
 # Import any necessary libraries below
 import socket
+from _thread import *
 import threading
 import sys, os, struct
 
@@ -31,8 +32,7 @@ def threaded(c):
 
     while True:
 
-        data = c.recv(BUFFER).decode('utf-8')
-
+        data = c.recv(BUFFER)
         if not data:
             print_lock.release()
             break
@@ -40,18 +40,18 @@ def threaded(c):
     c.close()
 
 
+
 def chatroom (c):
     # Task1: login/register the user
-    print('Chatroom starting')
     username = c.recv(BUFFER).decode('utf-8')
     print(f"received username: {username}")
 
+    
     password = ""
 
     if not (os.path.exists("credentials.txt")):
         print("File does not exist, creating new file...")
-        infile = open(file, 'x', encoding='utf-8')
-        infile.close()
+        infile = open(file, 'x+', encoding='utf-8')
     else:
         print("File exists, reading file...")
         infile = open(file, 'r', encoding='utf-8')
@@ -60,35 +60,43 @@ def chatroom (c):
     pass_answer = ""
 
     for line in infile:
+
         if username in line:
             user_answer = "Existing user"
             c.send(user_answer.encode('utf-8'))
+            pass_answer = "Incorrect password"
+            c.send(pass_answer.encode('utf-8'))
             correct = False
 
             while correct == False:
                 password = c.recv(BUFFER)
                 password = password.decode('utf-8')
-                if password in line:
+                if password == line.split(', ')[1].strip():
                     pass_answer = "Login successful"
                     c.send(pass_answer.encode('utf-8'))
                     correct = True
+                    break
                 else:
                     pass_answer = "Incorrect password"
                     c.send(pass_answer.encode('utf-8'))
-            infile.close()
-        else:
-            user_answer = "Creating new user."
-            c.send(user_answer.encode('utf-8'))
+            break
 
-            pass_answer = "Enter new password: "
-            c.send(pass_answer.encode('utf-8'))
+    infile.close()
 
-            password = c.recv(BUFFER)
-            password = password.decode('utf-8')
 
-            outfile = open(file, 'a', encoding='utf-8')
-            print(f'{username}, {password}', file=outfile)
-            outfile.close()
+    if user_answer == "":
+
+        user_answer = "Creating new user. "
+        c.send(user_answer.encode('utf-8'))
+
+        pass_answer = "Enter new password: "
+        c.send(pass_answer.encode('utf-8'))
+
+        password = c.recv(BUFFER).decode('utf-8')
+
+        outfile = open(file, 'a', encoding='utf-8')
+        print(f'{username}, {password}', file=outfile)
+        outfile.close()
 
     list_of_clients.append((c, username))
    
@@ -101,16 +109,15 @@ def chatroom (c):
             if client[0] == c:
                 senders_username = client[1]
 
-        c.send("Enter BM for broadcast message, PM for private message, or EX to exit chatroom: ")
+        c.send("Enter BM for broadcast message, PM for private message, or EX to exit chatroom: ".encode('utf-8'))
         data = c.recv(BUFFER).decode('utf-8')
 
         if not data:
             break
 
         if data == "BM":
-            c.send("Broadcast message. Enter message: ")
-            broadcast_message(c.recv(BUFFER), c, senders_username)
-            c.send("Message sent.")
+            c.send("Broadcast message. Enter message: ".encode('utf-8'))
+            broadcast_message(c.recv(BUFFER), senders_username)
 
 
         elif data == "PM":
@@ -120,37 +127,34 @@ def chatroom (c):
 
             c.send(message)
 
-            c.send("Private message. Enter recipient's username: ")
-
             while True:
                 recipients_username = c.recv(BUFFER).decode('utf-8')
 
                 if recipients_username not in message:
-                    c.send("N")
+                    c.send("N".encode('utf-8'))
                 else:
-                    c.send("Y")
+                    c.send("Y".encode('utf-8'))
                     break
 
-            c.send("Enter message: ")
+            c.send("Enter message:".encode('utf-8'))
             private_message(c.recv(BUFFER), recipients_username, senders_username)
-            c.send("Message sent.")
+            c.send("Message sent.".encode('utf-8'))
 
 
         elif data == "EX":
-            c.send("Exiting chatroom...")
-            list_of_clients.remove((c, username))
-
-            """for client in list_of_clients:
+            c.send("Exiting chatroom...".encode('utf-8'))
+            for client in list_of_clients:
                 if client[0] == c:
                     list_of_clients.remove(client)
-            break"""
+                    break
+            print(f"Removed {username} from list of clients.")
+            return
 
 
 
-def broadcast_message(message, senders_conn, senders_username):
+def broadcast_message(message, senders_username):
     for client in list_of_clients:
-        if client[0] != senders_conn:
-            client.send(f"**BM** {senders_username}: {message}")
+        client[0].send(f"**BM** {senders_username}: {message}")
 
 
 
@@ -163,7 +167,7 @@ def private_message(message, recipients_username, senders_username):
 
 def main(port):
      # TODO: Validate input arguments
-    HOST = '192.168.56.1'
+    HOST = 'student00.ischool.illinois.edu'
     PORT = int(port)
     sin = (HOST, PORT)
 
@@ -196,10 +200,7 @@ def main(port):
         print_lock.acquire()
         print('Connected to :', addr[0], ':', addr[1])
         
-        threading.Thread(target=threaded,
-            args=(conn,),
-        ).start()
-        
+        start_new_thread(threaded, (conn,))
         chatroom(conn)
 
     s.close()

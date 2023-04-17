@@ -13,12 +13,15 @@
 
 # Import any necessary libraries below
 import socket
+from _thread import *
 import threading
 import sys, os, struct
 import time
 
 # Any global variables
 BUFFER =  4096
+
+
 
 
 """
@@ -37,9 +40,11 @@ def accept_messages(clientsock):
             print(message)
         
 
+
+
 def main(host, port, username):
      # TODO: Validate input arguments
-    HOST = socket.gethostbyname(socket.gethostname())
+    HOST = host
     PORT = int(port)
     sin = (HOST, PORT)
 
@@ -59,32 +64,43 @@ def main(host, port, username):
         print("Connection established.")
     except socket.error as e:
         print("Failed to connect to the server.")
-
+        sys.exit()
+    
     clientsock.send(username.encode('utf-8'))
-
+    user_answer = clientsock.recv(BUFFER).decode('utf-8')
+    print(user_answer)
 
     while True:
-        user_answer = clientsock.recv(BUFFER).decode('utf-8')
-        print(user_answer)
 
         pass_answer = ""
+        pass_answer = clientsock.recv(BUFFER).decode('utf-8')
         
-        while pass_answer == "Incorrect password" or pass_answer == "Enter new password: " or pass_answer == "": 
-            message = input("Please enter your password: ")
-            message_bytes = message.encode('utf-8')
-            try:
-                clientsock.send(message_bytes)
-            except socket.error as e:
-                print('Failed to send message.')
-                sys.exit()
-            pass_answer = clientsock.recv(BUFFER).decode('utf-8')
-            print(user_answer)
+        while pass_answer == "Incorrect password" or pass_answer == "" or pass_answer == "Enter new password: ":
+            if pass_answer == "Enter new password: ":
+                message = input("Please enter a new password: ")
+                message_bytes = message.encode('utf-8')
+                try:
+                    clientsock.send(message_bytes)
+                except socket.error as e:
+                    print('Failed to send message.')
+                    sys.exit()
+                break
+            else:
+                message = input("Please enter your password: ")
+                message_bytes = message.encode('utf-8')
+                try:
+                    clientsock.send(message_bytes)
+                except socket.error as e:
+                    print('Failed to send message.')
+                    sys.exit()
+                pass_answer = clientsock.recv(BUFFER).decode('utf-8')
+                print(pass_answer)
         else:
             break
 
-
     # TODO: initiate a thread for receiving message
-    accept_messages(clientsock)
+    message_thread = threading.Thread(target=accept_messages, args=(clientsock, ))
+    message_thread.start()
 
     # TODO: use a loop to handle the operations (i.e., BM, PM, EX)
     while True:
@@ -111,13 +127,10 @@ def main(host, port, username):
                 print("Please enter an online member's username:")
                 clientsock.send(input('> ').encode('utf-8'))
                 ack = clientsock.recv(BUFFER).decode('utf-8')
-            print(clientsock.recv(BUFFER).decode('utf-8'))
-            clientsock.send(input('> ').encode('utf-8'))
+
+            clientsock.send(input(f"{clientsock.recv(BUFFER).decode('utf-8')} "))
             print(clientsock.recv(BUFFER).decode('utf-8'))
             continue
-            
-
-
 
 
 if __name__ == '__main__': 
