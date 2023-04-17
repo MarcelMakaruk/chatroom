@@ -35,7 +35,7 @@ Hint: you can use the first character of the message to distinguish different ty
 def accept_messages(clientsock):
     while True:
         message = clientsock.recv(BUFFER).decode('utf-8')
-        message_split = [*message]
+        message_split = [char for char in message]
         if message_split[0] == '*':
             print(message)
         
@@ -105,9 +105,12 @@ def main(host, port, username):
     # TODO: use a loop to handle the operations (i.e., BM, PM, EX)
     while True:
         message = input("Please enter a command: ")
+        clientsock.send(message.encode('utf-8'))
+
         # EX
         if message == 'EX':
             print('Connection closed.')
+            clientsock.close()
             break
 
         # BM
@@ -128,7 +131,7 @@ def main(host, port, username):
                 clientsock.send(input('> ').encode('utf-8'))
                 ack = clientsock.recv(BUFFER).decode('utf-8')
 
-            clientsock.send(input(f"{clientsock.recv(BUFFER).decode('utf-8')} "))
+            clientsock.send(input(f"{clientsock.recv(BUFFER).decode('utf-8')} ").encode('utf-8'))
             print(clientsock.recv(BUFFER).decode('utf-8'))
             continue
 

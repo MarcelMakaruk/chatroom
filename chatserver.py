@@ -117,7 +117,7 @@ def chatroom (c):
 
         if data == "BM":
             c.send("Broadcast message. Enter message: ".encode('utf-8'))
-            broadcast_message(c.recv(BUFFER), senders_username)
+            broadcast_message(c.recv(BUFFER).decode('utf-8'), senders_username)
 
 
         elif data == "PM":
@@ -125,7 +125,7 @@ def chatroom (c):
             for client in list_of_clients:
                 message += client[1] + "\n"
 
-            c.send(message)
+            c.send(message.encode('utf-8'))
 
             while True:
                 recipients_username = c.recv(BUFFER).decode('utf-8')
@@ -136,8 +136,8 @@ def chatroom (c):
                     c.send("Y".encode('utf-8'))
                     break
 
-            c.send("Enter message:".encode('utf-8'))
-            private_message(c.recv(BUFFER), recipients_username, senders_username)
+            c.send("Enter message: ".encode('utf-8'))
+            private_message(c.recv(BUFFER).decode('utf-8'), recipients_username, senders_username)
             c.send("Message sent.".encode('utf-8'))
 
 
@@ -154,7 +154,7 @@ def chatroom (c):
 
 def broadcast_message(message, senders_username):
     for client in list_of_clients:
-        client[0].send(f"**BM** {senders_username}: {message}")
+        client[0].send(f"**BM** {senders_username}: {message}".encode('utf-8'))
 
 
 
@@ -162,7 +162,7 @@ def broadcast_message(message, senders_username):
 def private_message(message, recipients_username, senders_username):
     for client in list_of_clients:
         if client[1] == recipients_username:
-            client[0].send(f"**PM** {senders_username}: {message}")
+            client[0].send(f"**PM** {senders_username}: {message}".encode('utf-8'))
 
 
 def main(port):
