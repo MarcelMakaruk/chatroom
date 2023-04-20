@@ -28,19 +28,6 @@ Args:
 Returns:
     None
 """
-def threaded(c):
-
-    while True:
-
-        data = c.recv(BUFFER)
-        if not data:
-            print_lock.release()
-            break
-
-    c.close()
-
-
-
 def chatroom (c):
     # Task1: login/register the user
     username = c.recv(BUFFER).decode('utf-8')
@@ -148,7 +135,8 @@ def chatroom (c):
                     list_of_clients.remove(client)
                     break
             print(f"Removed {username} from list of clients.")
-            return
+            c.close()
+            break
 
 
 
@@ -197,11 +185,9 @@ def main(port):
         conn, addr = serversock.accept()
 
         # TODO: initiate a thread for the connected user
-        print_lock.acquire()
         print('Connected to :', addr[0], ':', addr[1])
         
-        start_new_thread(threaded, (conn,))
-        chatroom(conn)
+        start_new_thread(chatroom, (conn,))
 
     s.close()
         

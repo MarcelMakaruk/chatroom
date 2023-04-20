@@ -37,9 +37,8 @@ def accept_messages(clientsock):
         message = clientsock.recv(BUFFER).decode('utf-8')
         message_split = [char for char in message]
         if message_split[0] == '*':
-            print(message)
-        
-
+            print(f'\n{message}')
+            print("Please enter a command: ")
 
 
 def main(host, port, username):
@@ -104,8 +103,14 @@ def main(host, port, username):
 
     # TODO: use a loop to handle the operations (i.e., BM, PM, EX)
     while True:
-        message = input("Please enter a command: ")
-        clientsock.send(message.encode('utf-8'))
+        count = 0
+        if count == 0:
+            message = input("Please enter a command: ")
+            clientsock.send(message.encode('utf-8'))
+            count += 1
+        else:
+            message = input()
+            clientsock.send(message.encode('utf-8'))
 
         # EX
         if message == 'EX':
